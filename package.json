@@ -1,0 +1,13 @@
+{
+  "name": "batch_encoder",
+  "version": "0.0.1",
+  "description": "convert movie files to h264/h265",
+  "main": "server.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bull": "^1.0.0",
+    "bull-ui": "^1.2.1",
+    "minimist": "^1.2.0"
+  }
+}
