@@ -110,6 +110,11 @@ class Encoder {
     return new Promise( (resolve, reject) => {
       Encoder.exists(file).then( () => {
         let { width, height } = video
+        if(props.scale) {
+          let scale = props.scale.trim().split('x')
+          width = scale[0]
+          height = scale[1]
+        }
         let rate = '2M'
         let minrate = '1M'
         let maxrate = '3M'
