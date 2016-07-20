@@ -5,14 +5,19 @@ const path = require('path')
 const fs = require('fs')
 const Encoder = require('./src/encoder')
 
-let { analyzeVideo, encodeVideo, muxVideo, replaceFile } = require('./src/queues')
+let { analyzeVideo, encodeVideo, replaceFile } = require('./src/queues')
 
 analyzeVideo.process(1, (job) => {
   console.log(job.jobId, 'analyzeVideo start', job.data.file)
   return Encoder.analyzeVideo(job.data.file).then( (video) => {
-    encodeVideo.add({file: job.data.file, props: job.data.props, video: video})
-    console.log(job.jobId, 'analyzeVideo finish')
-    return true
+    Encoder.checkForCropping(job.data.file).then( (crop) => {
+      encodeVideo.add({file: job.data.file, props: job.data.props, crop: crop, video: video})
+      console.log(job.jobId, 'analyzeVideo finish')
+      return true
+    }, (error) => {
+      console.log(job.jobId, 'analyzeVideo failed')
+      return error
+    })
   }, (error) => {
     console.log(job.jobId, 'analyzeVideo failed')
     return error
@@ -22,7 +27,8 @@ analyzeVideo.process(1, (job) => {
 encodeVideo.process(2, (job) => {
   console.log(job.jobId, 'encodeVideo start', job.data.file)
   return Encoder.encodeVideo(job.data.file, job.data.crop, job.data.props, job.data.video, job).then( (output) => {
-    muxVideo.add({file: job.data.file, output: output})
+    //muxVideo.add({file: job.data.file, output: output})
+    replaceFile.add({file: job.data.file, final: output})
     console.log(job.jobId, 'encodeVideo finish')
     return true
   }, (error) => {
@@ -31,17 +37,17 @@ encodeVideo.process(2, (job) => {
   })
 })
 
-muxVideo.process(1, (job) => {
-  console.log(job.jobId, 'muxVideo start', job.data.file)
-  return Encoder.replaceVideo(job.data.file, job.data.output).then( (final) => {
-    replaceFile.add({file: job.data.file, final: final})
-    console.log(job.jobId, 'muxVideo finish')
-    return true
-  }, (error) => {
-    console.log(job.jobId, 'muxVideo failed')
-    return error
-  })
-})
+//muxVideo.process(1, (job) => {
+//  console.log(job.jobId, 'muxVideo start', job.data.file)
+//  return Encoder.replaceVideo(job.data.file, job.data.output).then( (final) => {
+//    replaceFile.add({file: job.data.file, final: final})
+//    console.log(job.jobId, 'muxVideo finish')
+//    return true
+//  }, (error) => {
+//    console.log(job.jobId, 'muxVideo failed')
+//    return error
+//  })
+//})
 
 replaceFile.process(1, (job) => {
   return new Promise( (resolve, reject) => {

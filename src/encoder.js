@@ -10,11 +10,15 @@ const ROOT_DIR = path.dirname(__dirname)
 const TMP_DIR = path.join(ROOT_DIR, 'tmp')
 const FINAL_DIR = path.join(ROOT_DIR, 'final')
 
-const FFMPEG_EXE = path.join(ROOT_DIR, 'bin', 'ffmpeg.exe')
-const FFPROBE_EXE = path.join(ROOT_DIR, 'bin', 'ffprobe.exe')
-const MKVMERGE_EXE = path.join(ROOT_DIR, 'bin', 'mkvmerge.exe')
-
 const PER_PIXEL = 0.5
+
+const config = require('./config')
+
+const FFMPEG = config.binaries.FFMPEG
+const FFPROBE = config.binaries.FFPROBE
+const MKVMERGE = config.binaries.MKVMERGE
+
+const systemProperties = config.systemProperties
 
 class Encoder {
 
@@ -63,7 +67,7 @@ class Encoder {
   static checkForCropping(file) {
     return new Promise( (resolve, reject) => {
       Encoder.exists(file).then( () => {
-        let cmd = `${FFMPEG_EXE} -ss 90 -i "${file}" -vframes 90 -vf cropdetect -f null -`
+        let cmd = `${FFMPEG} -ss 90 -i "${file}" -vframes 90 -vf cropdetect -f null -`
         exec(cmd, (error, stdout, stderr) => {
           if(error) {
             reject(error)
@@ -80,7 +84,7 @@ class Encoder {
   static analyzeVideo(file) {
     return new Promise( (resolve, reject) => {
       Encoder.exists(file).then( () => {
-        let cmd = `${FFPROBE_EXE} -v quiet -print_format json -show_streams "${file}"`
+        let cmd = `${FFPROBE} -v quiet -print_format json -show_streams "${file}"`
         exec(cmd, (error, stdout, stderr) => {
           if(error) {
             reject(error)
@@ -119,7 +123,7 @@ class Encoder {
         let minrate = '1M'
         let maxrate = '3M'
         let bufsize = '6M'
-        let codec   = 'nvenc_h264'
+        let codec   = config.codecs.h264
         let level   = '4.1'
         if(width && height) {
           let pixels = width * height
@@ -128,7 +132,7 @@ class Encoder {
             minrate = rate * 0.5
             maxrate = rate * 1.5
             bufsize = maxrate * 2
-            codec   = 'nvenc_hevc'
+            codec   = config.codecs.h265
             level   = '6.2'
           } else {
             rate = pixels / PER_PIXEL
@@ -138,11 +142,9 @@ class Encoder {
           }
         }
 
-        let defaultProperties = {
-          preset: 'hq',
+        let defaultProperties = Object.assign(systemProperties, {
           profile: 'high',
           level: level,
-          tier: 'high',
           pixel_format: 'yuv444p',
           rate: rate,
           minrate: minrate,
@@ -153,7 +155,7 @@ class Encoder {
         props = Object.assign(defaultProperties, props)
 
         const hmac = crypto.createHmac('sha256', file)
-        let output = path.join(TMP_DIR, `${hmac.digest('hex')}.mp4`)
+        let output = path.join(TMP_DIR, `${hmac.digest('hex')}.mkv`)
         Encoder.unlink(output)
 
         if(props.scale) {
@@ -178,10 +180,16 @@ class Encoder {
         if(scaleCrop) {
           args.push('-vf', scaleCrop)
         }
-        args.push('-an', output)
+        args = args.concat([
+          '-c:a', 'copy',
+          '-c:s', 'copy',
+          '-c:d', 'copy',
+          '-c:t', 'copy',
+          output
+        ])
 
-        console.log(FFMPEG_EXE, args.join(' '))
-        const ffmpeg = spawn(FFMPEG_EXE, args)
+        console.log(FFMPEG, args.join(' '))
+        const ffmpeg = spawn(FFMPEG, args)
 
         ffmpeg.stdout.on('data', (data) => {
           console.log(`stdout: ${data}`)
@@ -259,7 +267,7 @@ class Encoder {
             '--no-chapters',
              '(', output, ')'
           ]
-          const mkvmerge = spawn(MKVMERGE_EXE, args)
+          const mkvmerge = spawn(MKVMERGE, args)
 
           mkvmerge.on('error', (error) => {
             console.log(`spwan error`, error)
