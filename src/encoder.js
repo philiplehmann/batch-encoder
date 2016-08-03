@@ -67,15 +67,19 @@ class Encoder {
   static checkForCropping(file) {
     return new Promise( (resolve, reject) => {
       Encoder.exists(file).then( () => {
-        let cmd = `${FFMPEG} -ss 90 -i "${file}" -vframes 90 -vf cropdetect -f null -`
-        exec(cmd, (error, stdout, stderr) => {
-          if(error) {
-            reject(error)
-          } else {
-            //console.log(stderr)
-            let match = stderr.match(/(crop=[\d]*:[\d]*:[\d]*:[\d]*)/)
-            resolve(match ? match[0] : null)
-          }
+
+        const ffmpeg = spawn(FFMPEG, ['-ss', '600', '-i', file, '-vframes', '10000', '-vf', 'cropdetect', '-f', 'null', '-'])
+
+        ffmpeg.stdout.on('data', (data) => {
+          console.log(`stdout: ${data}`)
+        })
+        let stderr = ''
+        ffmpeg.stderr.on('data', (data) => {
+          stderr += data
+        })
+        ffmpeg.on('close', (code) => {
+          let match = stderr.match(/(crop=[\d]*:[\d]*:[\d]*:[\d]*)/)
+          resolve(match ? match[0] : null)
         })
       }, reject)
     })
@@ -142,7 +146,7 @@ class Encoder {
           }
         }
 
-        let defaultProperties = Object.assign(systemProperties, {
+        props = Object.assign(systemProperties, {
           profile: 'high',
           level: level,
           pixel_format: 'yuv444p',
@@ -151,8 +155,7 @@ class Encoder {
           maxrate: maxrate,
           bufsize: bufsize,
           scale: null
-        }
-        props = Object.assign(defaultProperties, props)
+        }, props)
 
         const hmac = crypto.createHmac('sha256', file)
         let output = path.join(TMP_DIR, `${hmac.digest('hex')}.mkv`)
