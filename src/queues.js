@@ -2,8 +2,7 @@
 'use strict'
 const Queue = require('bull')
 
-let host = '127.0.0.1'
-let port = 6379
+const { port, host } = require('./redis-server')
 
 exports.analyzeVideo = Queue('analyzeVideo', port, host)
 exports.encodeVideo = Queue('encodeVideo', port, host)
