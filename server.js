@@ -12,7 +12,7 @@ redisServer.then(() => {
   analyzeVideo.process(1, (job) => {
     console.log(job.jobId, 'analyzeVideo start', job.data.file)
     return Encoder.analyzeVideo(job.data.file).then( (video) => {
-      Encoder.checkForCropping(job.data.file).then( (crop) => {
+      return Encoder.checkForCropping(job.data.file).then( (crop) => {
         encodeVideo.add({file: job.data.file, props: job.data.props, crop: crop, video: video})
         console.log(job.jobId, 'analyzeVideo finish')
         return true
