@@ -4,10 +4,12 @@
 const path = require('path')
 const fs = require('fs')
 const Encoder = require('./src/encoder')
+const Arena = require('bull-arena')
+const express = require('express')
 const { port, host, redisServer } = require('./src/redis-server')
 
 redisServer.then(() => {
-  let { analyzeVideo, encodeVideo, replaceFile } = require('./src/queues')
+  const { analyzeVideo, encodeVideo, replaceFile } = require('./src/queues')
 
   analyzeVideo.process(1, (job) => {
     console.log(job.jobId, 'analyzeVideo start', job.data.file)
@@ -18,11 +20,11 @@ redisServer.then(() => {
         return true
       }, (error) => {
         console.log(job.jobId, 'analyzeVideo failed')
-        return error
+        return new Error(error)
       })
     }, (error) => {
       console.log(job.jobId, 'analyzeVideo failed')
-      return error
+      return new Error(error)
     })
   })
 
@@ -30,12 +32,12 @@ redisServer.then(() => {
     console.log(job.jobId, 'encodeVideo start', job.data.file)
     return Encoder.encodeVideo(job.data.file, job.data.crop, job.data.props, job.data.video, job).then( (output) => {
       //muxVideo.add({file: job.data.file, output: output})
-      replaceFile.add({file: job.data.file, final: output})
+      replaceFile.add({ file: job.data.file, final: output })
       console.log(job.jobId, 'encodeVideo finish')
       return true
     }, (error) => {
       console.log(job.jobId, 'encodeVideo failed')
-      return error
+      return new Error(error)
     })
   })
 
@@ -65,7 +67,8 @@ redisServer.then(() => {
           console.log(job.jobId, 'replaceFile finish')
         }, (error) => {
           console.log(job.jobId, 'replaceFile failed')
-          reject(error)
+          reject(new Error(error))
+
         })
       } catch (e) {
         console.log(job.jobId, 'replaceFile failed')
@@ -73,8 +76,33 @@ redisServer.then(() => {
       }
     })
   })
-
-  let app = require('bull-ui/app')({ redis: { host: host, port: port }})
-  app.listen(8080)
-  console.log('show queue ui on http://localhost:8080/')
 })
+
+const router = express.Router()
+const arenaConfig = Arena({
+  queues: [
+    {
+      name: "analyzeVideo",
+      hostId: 'batchEncoder',
+      redis: { host: host, port: port }
+    },
+    {
+      name: "encodeVideo",
+      hostId: 'batchEncoder',
+      redis: { host: host, port: port }
+    },
+    {
+      name: "muxVideo",
+      hostId: 'batchEncoder',
+      redis: { host: host, port: port }
+    },
+    {
+      name: "replaceFile",
+      hostId: 'batchEncoder',
+      redis: { host: host, port: port }
+    }
+  ]
+}, {
+  port: 8080
+})
+router.use(arenaConfig)

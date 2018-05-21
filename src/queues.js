@@ -4,7 +4,7 @@ const Queue = require('bull')
 
 const { port, host } = require('./redis-server')
 
-exports.analyzeVideo = Queue('analyzeVideo', port, host)
-exports.encodeVideo = Queue('encodeVideo', port, host)
-exports.muxVideo = Queue('muxVideo', port, host)
-exports.replaceFile = Queue('replaceFile', port, host)
+exports.analyzeVideo = new Queue('analyzeVideo', { redis: {port: port, host: host } })
+exports.encodeVideo = new Queue('encodeVideo', { redis: {port: port, host: host } })
+exports.muxVideo = new Queue('muxVideo', { redis: {port: port, host: host } })
+exports.replaceFile = new Queue('replaceFile', { redis: {port: port, host: host } })
