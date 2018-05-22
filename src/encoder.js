@@ -20,6 +20,18 @@ const MKVMERGE = config.binaries.MKVMERGE
 
 const systemProperties = config.systemProperties
 
+let durationHelper = (match, all) => {
+  if(match && match.length > 1) {
+    let date = match[1]
+    let [hhmmss, ms] = date.split('.')
+    let [hh, mm, ss] = hhmmss.split(':')
+    return hh * 60 * 60 * 1000 + mm * 60 * 1000 + ss * 1000 + ms * 10
+  } else {
+    console.log(all)
+    return 0
+  }
+}
+
 class Encoder {
 
   static encode(file) {
@@ -88,7 +100,7 @@ class Encoder {
   static analyzeVideo(file) {
     return new Promise( (resolve, reject) => {
       Encoder.exists(file).then( () => {
-        let cmd = `${FFPROBE} -v quiet -print_format json -show_streams "${file}"`
+        const cmd = `${FFPROBE} -v quiet -print_format json -show_streams "${file}"`
         exec(cmd, (error, stdout, stderr) => {
           if(error) {
             reject(error)
@@ -109,7 +121,9 @@ class Encoder {
             resolve(video)
           }
         })
-      }, reject)
+      }, () => {
+        reject('file does not exists')
+      })
     })
   }
 
@@ -129,16 +143,19 @@ class Encoder {
         let bufsize = '6M'
         let codec   = config.codecs.h264
         let level   = '4.1'
+        let profile = 'main'
         if(width && height) {
           let pixels = width * height
-          if(pixels > 1920 * 1080) {
-            rate = pixels / PER_PIXEL / 4
+          if((!props.codec && pixels > 1920 * 1080) || ['hevc', 'h265'].includes(props.codec)) {
+            profile = 'main'
+            rate = pixels / PER_PIXEL / 3
             minrate = rate * 0.5
             maxrate = rate * 1.5
             bufsize = maxrate * 2
             codec   = config.codecs.h265
             level   = '6.2'
           } else {
+            profile = 'high'
             rate = pixels / PER_PIXEL
             minrate = rate * 0.5
             maxrate = rate * 1.5
@@ -147,7 +164,7 @@ class Encoder {
         }
 
         props = Object.assign(systemProperties, {
-          profile: 'high',
+          profile: profile,
           level: level,
           pixel_format: 'yuv444p',
           rate: rate,
@@ -201,20 +218,9 @@ class Encoder {
         let durationTS = 0;
         let currentTS = 0;
 
-        let durationHelper = (match) => {
-          if(match && match.length > 1) {
-            let date = match[1]
-            let [hhmmss, ms] = date.split('.')
-            let [hh, mm, ss] = hhmmss.split(':')
-            return hh * 60 * 60 * 1000 + mm * 60 * 1000 + ss * 1000 + ms * 10
-          } else {
-            return 0
-          }
-        }
-
         ffmpeg.stderr.on('data', (data) => {
-          let duration = durationHelper(data.toString().match(/Duration: ([0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{2})/))
-          let current = durationHelper(data.toString().match(/time=([0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{2})/))
+          let duration = durationHelper(data.toString().match(/Duration: ([0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{2})/), data.toString())
+          let current = durationHelper(data.toString().match(/time=([0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{2})/), data.toString())
 
           if(duration) {
             durationTS = duration
