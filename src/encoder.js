@@ -188,13 +188,13 @@ class Encoder {
           '-preset', props.preset,
           '-profile:v', props.profile,
           '-level', props.level,
-          '-tier', props.tier,
           '-pixel_format', props.pixel_format,
           '-b:v', props.rate,
           '-minrate', props.minrate,
           '-maxrate', props.maxrate
           //'-bufsize', props.bufsize
         ]
+        if(props.tier) args = args.concat(['-tier', props.tier])
 
         if(props.scale || crop) {
           args.push('-vf', props.scale ? props.scale : crop)
