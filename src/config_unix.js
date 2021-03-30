@@ -12,6 +12,5 @@ exports.binaries = {
   MKVMERGE: which('mkvmerge')
 }
 exports.systemProperties = {
-    preset: 'veryslow',
-    tier: 'high'
+    preset: 'veryslow'
 }
