@@ -1,7 +1,8 @@
 server
 ======
+```
 node server.js
-
+```
 
 client
 ======
