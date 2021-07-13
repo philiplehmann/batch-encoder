@@ -17,7 +17,7 @@ exports.redisServer = new Promise((resolve, reject) => {
     //redisServer.stderr.on('data', (data) => { console.log(data.toString()) })
   })
   client.connect(port, host, () => {
-  	console.log('Connected to redis server')
+    console.log('Connected to redis server')
     client.end()
     resolve()
   })

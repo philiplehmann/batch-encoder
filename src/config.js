@@ -16,7 +16,7 @@ let codecs = {
   h265: codecStr.includes('nvenc_hevc') ? 'nvenc_hevc' : codecStr.includes('hevc') ? 'hevc' : false
 }
 
-if(!codecs.h264 || !codecs.h265) {
+if (!codecs.h264 || !codecs.h265) {
   console.log('codec missing', codecs)
   process.exit()
 }

@@ -10,6 +10,6 @@ exports.binaries = {
   MKVMERGE: path.join(ROOT_DIR, 'bin', 'mkvmerge.exe')
 }
 exports.systemProperties = {
-    preset: 'hq',
-    tier: 'high',
+  preset: 'hq',
+  tier: 'high',
 }

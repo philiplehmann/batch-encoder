@@ -5,6 +5,7 @@ const path = require('path')
 const fs = require('fs')
 const Encoder = require('./src/encoder')
 const Arena = require('bull-arena')
+const Bull = require('bull')
 const express = require('express')
 const { port, host, redisServer } = require('./src/redis-server')
 
@@ -13,9 +14,9 @@ redisServer.then(() => {
 
   analyzeVideo.process(1, (job) => {
     console.log(job.id, 'analyzeVideo start', JSON.stringify(job.data.file))
-    return Encoder.analyzeVideo(job.data.file).then( (video) => {
-      return Encoder.checkForCropping(job.data.file).then( (crop) => {
-        encodeVideo.add({file: job.data.file, props: job.data.props, crop: crop, video: video})
+    return Encoder.analyzeVideo(job.data.file).then((video) => {
+      return Encoder.checkForCropping(job.data.file).then((crop) => {
+        encodeVideo.add({ file: job.data.file, props: job.data.props, crop: crop, video: video })
         console.log(job.id, 'analyzeVideo finish')
         return true
       }, (error) => {
@@ -30,7 +31,7 @@ redisServer.then(() => {
 
   encodeVideo.process(2, (job) => {
     console.log(job.id, 'encodeVideo start', job.data.file)
-    return Encoder.encodeVideo(job.data.file, job.data.crop, job.data.props, job.data.video, job).then( (output) => {
+    return Encoder.encodeVideo(job.data.file, job.data.crop, job.data.props, job.data.video, job).then((output) => {
       //muxVideo.add({file: job.data.file, output: output})
       replaceFile.add({ file: job.data.file, final: output })
       console.log(job.id, 'encodeVideo finish')
@@ -54,14 +55,14 @@ redisServer.then(() => {
   //})
 
   replaceFile.process(1, (job) => {
-    return new Promise( (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       console.log(job.id, 'replaceFile start', job.data.file)
       let { file, final } = job.data
       let extName = path.extname(file)
       let target = file.replace(new RegExp(`${extName}$`), '.mkv')
       try {
         Encoder.unlink(file)
-        Encoder.copy(final, target).then( () => {
+        Encoder.copy(final, target).then(() => {
           Encoder.unlink(final)
           resolve()
           console.log(job.id, 'replaceFile finish')
@@ -80,26 +81,27 @@ redisServer.then(() => {
 
 const router = express.Router()
 const arenaConfig = Arena({
+  Bull,
   queues: [
     {
       name: "analyzeVideo",
       hostId: 'batchEncoder',
-      redis: { host: host, port: port }
+      redis: { host: host, port: port },
     },
     {
       name: "encodeVideo",
       hostId: 'batchEncoder',
-      redis: { host: host, port: port }
+      redis: { host: host, port: port },
     },
     {
       name: "muxVideo",
       hostId: 'batchEncoder',
-      redis: { host: host, port: port }
+      redis: { host: host, port: port },
     },
     {
       name: "replaceFile",
       hostId: 'batchEncoder',
-      redis: { host: host, port: port }
+      redis: { host: host, port: port },
     }
   ]
 }, {

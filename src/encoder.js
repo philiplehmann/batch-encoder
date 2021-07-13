@@ -21,7 +21,7 @@ const MKVMERGE = config.binaries.MKVMERGE
 const systemProperties = config.systemProperties
 
 let durationHelper = (match, all) => {
-  if(match && match.length > 1) {
+  if (match && match.length > 1) {
     let date = match[1]
     let [hhmmss, ms] = date.split('.')
     let [hh, mm, ss] = hhmmss.split(':')
@@ -35,15 +35,15 @@ let durationHelper = (match, all) => {
 class Encoder {
 
   static encode(file) {
-    return new Promise( (resolve, reject) => {
-      this.encodeVideo(file).then( (output) => {
+    return new Promise((resolve, reject) => {
+      this.encodeVideo(file).then((output) => {
         this.replaceVideo(file, output).then(resolve, reject)
       }, reject)
     })
   }
 
   static exists(file) {
-    return new Promise( (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
         fs.exists(file, (exists) => {
           exists ? resolve() : reject(`file not found: ${file}`)
@@ -57,12 +57,12 @@ class Encoder {
   static unlink(file) {
     try {
       fs.unlinkSync(file)
-    } catch  (e) {
+    } catch (e) {
     }
   }
 
   static copy(source, destination) {
-    return new Promise( (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
         let is = fs.createReadStream(source)
         let os = fs.createWriteStream(destination)
@@ -77,8 +77,8 @@ class Encoder {
   }
 
   static checkForCropping(file) {
-    return new Promise( (resolve, reject) => {
-      Encoder.exists(file).then( () => {
+    return new Promise((resolve, reject) => {
+      Encoder.exists(file).then(() => {
 
         const ffmpeg = spawn(FFMPEG, ['-ss', '600', '-i', file, '-vframes', '10000', '-vf', 'cropdetect', '-f', 'null', '-'])
 
@@ -98,20 +98,20 @@ class Encoder {
   }
 
   static analyzeVideo(file) {
-    return new Promise( (resolve, reject) => {
-      Encoder.exists(file).then( () => {
+    return new Promise((resolve, reject) => {
+      Encoder.exists(file).then(() => {
         const cmd = `${FFPROBE} -v quiet -print_format json -show_streams "${file}"`
         exec(cmd, (error, stdout, stderr) => {
-          if(error) {
+          if (error) {
             reject(error)
           } else {
             let data = null
             try {
               data = JSON.parse(stdout)
-            } catch(e) {
+            } catch (e) {
               return reject(e)
             }
-            let video = data.streams.find( (stream) => {
+            let video = data.streams.find((stream) => {
               return stream.codec_type == 'video'
             })
             let { width, height } = video
@@ -129,10 +129,10 @@ class Encoder {
 
   static encodeVideo(file, crop, props, video, job) {
     props = props ? props : {}
-    return new Promise( (resolve, reject) => {
-      Encoder.exists(file).then( () => {
+    return new Promise((resolve, reject) => {
+      Encoder.exists(file).then(() => {
         let { width, height } = video
-        if(props.scale) {
+        if (props.scale) {
           let scale = props.scale.trim().split('x')
           width = scale[0]
           height = scale[1]
@@ -141,19 +141,19 @@ class Encoder {
         let minrate = '1M'
         let maxrate = '3M'
         let bufsize = '6M'
-        let codec   = config.codecs.h264
-        let level   = '4.1'
+        let codec = config.codecs.h264
+        let level = '4.1'
         let profile = 'main'
-        if(width && height) {
+        if (width && height) {
           let pixels = width * height
-          if((!props.codec && pixels > 1920 * 1080) || ['hevc', 'h265'].includes(props.codec)) {
+          if ((!props.codec && pixels > 1920 * 1080) || ['hevc', 'h265'].includes(props.codec)) {
             profile = 'main'
             rate = pixels / PER_PIXEL / 3
             minrate = rate * 0.5
             maxrate = rate * 1.5
             bufsize = maxrate * 2
-            codec   = config.codecs.h265
-            level   = '6.2'
+            codec = config.codecs.h265
+            level = '6.2'
           } else {
             profile = 'high'
             rate = pixels / PER_PIXEL
@@ -178,7 +178,7 @@ class Encoder {
         let output = path.join(TMP_DIR, `${hmac.digest('hex')}.mkv`)
         Encoder.unlink(output)
 
-        if(props.scale) {
+        if (props.scale) {
           props.scale = `scale=${props.scale}`
         }
 
@@ -194,9 +194,9 @@ class Encoder {
           '-maxrate', props.maxrate
           //'-bufsize', props.bufsize
         ]
-        if(props.tier) args = args.concat(['-tier', props.tier])
+        if (props.tier) args = args.concat(['-tier', props.tier])
 
-        if(props.scale || crop) {
+        if (props.scale || crop) {
           args.push('-vf', props.scale ? props.scale : crop)
         }
 
@@ -222,13 +222,13 @@ class Encoder {
           let duration = durationHelper(data.toString().match(/Duration: ([0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{2})/), data.toString())
           let current = durationHelper(data.toString().match(/time=([0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{2})/), data.toString())
 
-          if(duration) {
+          if (duration) {
             durationTS = duration
           }
-          if(current) {
+          if (current) {
             currentTS = current
           }
-          if(durationTS && currentTS) {
+          if (durationTS && currentTS) {
             job.progress(Math.round(100 / durationTS * currentTS * 100) / 100)
           }
         })
@@ -259,9 +259,9 @@ class Encoder {
   }
 
   static replaceVideo(file, output) {
-    return new Promise( (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
-        Encoder.exists(file).then( () => {
+        Encoder.exists(file).then(() => {
           let final = path.join(FINAL_DIR, path.basename(file))
           let extName = path.extname(final)
           final = final.replace(new RegExp(`${extName}$`), '.mkv')
@@ -274,7 +274,7 @@ class Encoder {
             '-M',
             '-B',
             '--no-chapters',
-             '(', output, ')'
+            '(', output, ')'
           ]
           const mkvmerge = spawn(MKVMERGE, args)
 
@@ -284,7 +284,7 @@ class Encoder {
           })
 
           mkvmerge.on('close', (code) => {
-            Encoder.exists(final).then( () => {
+            Encoder.exists(final).then(() => {
               Encoder.unlink(output)
               resolve(final)
             }, reject)
