@@ -2,3 +2,5 @@
 node_modules
 dump.rdb
 tmp/*
+.yarn/cache
+.yarn/install-state.gz

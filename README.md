@@ -1,15 +1,15 @@
 server
 ======
 ```
-node server.js
+yarn server
 ```
 
 client
 ======
 ```
-node client.js /path/to/file/or/folder --scale 1280x720
-node client.js /path/to/file/or/folder --scale 1920x1080
-node client.js /path/to/file/or/folder --codec hevc|h265
+yarn client /path/to/file/or/folder --scale 1280x720
+yarn client /path/to/file/or/folder --scale 1920x1080
+yarn client /path/to/file/or/folder --codec hevc|h265
 ```
 
 
