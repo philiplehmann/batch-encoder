@@ -15,4 +15,5 @@
     "quickfix.biome": "explicit",
     "source.organizeImports.biome": "explicit"
   },
+  "editor.defaultFormatter": "biomejs.biome"
 }

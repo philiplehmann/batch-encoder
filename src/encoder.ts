@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { access, unlink } from 'node:fs/promises';
 import path from 'node:path';
-import Bull from 'bull';
+import type Bull from 'bull';
 
 const ROOT_DIR = path.dirname(__dirname);
 const TMP_DIR = path.join(ROOT_DIR, 'tmp');
@@ -49,13 +49,13 @@ export const Encoder = {
   },
 
   copy(source: string, destination: string) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       try {
         const is = createReadStream(source);
         const os = createWriteStream(destination);
 
         is.pipe(os);
-        is.on('end', resolve);
+        is.on('end', () => resolve());
         is.on('error', reject);
       } catch (e) {
         reject(e);
@@ -114,8 +114,8 @@ export const Encoder = {
               } catch (e) {
                 return reject(e);
               }
-              const video = data.streams.find((stream: any) => {
-                return stream.codec_type === 'video';
+              const video = data.streams.find((stream: unknown) => {
+                return typeof stream === 'object' && stream !== null && 'codec_type' in stream && stream.codec_type === 'video';
               });
               const { width, height } = video;
               if (!width || !height) {
