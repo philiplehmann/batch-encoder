@@ -10,5 +10,5 @@ export const binaries = {
   MKVMERGE: which('mkvmerge'),
 };
 export const systemProperties = {
-  preset: 'veryslow',
+  preset: 'slow',
 };
