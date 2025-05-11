@@ -24,7 +24,7 @@ redisServer.then(() => {
       return true;
     } catch (error) {
       console.error(job.id, 'analyzeVideo failed', error);
-      // throw error;
+      throw error;
     }
   });
 
@@ -37,7 +37,7 @@ redisServer.then(() => {
       return true;
     } catch (error) {
       console.error(job.id, 'encodeVideo failed', error);
-      // throw error;
+      throw error;
     }
   });
 
@@ -53,7 +53,7 @@ redisServer.then(() => {
       console.log(job.id, 'replaceFile finish');
     } catch (error) {
       console.error(job.id, 'replaceFile failed', error);
-      // throw error;
+      throw error;
     }
   });
 });
@@ -86,7 +86,7 @@ const arenaConfig = Arena(
     ],
   },
   {
-    port: 8080,
+    port: Number(process.env.PORT || '8080'),
   },
 );
-router.use(arenaConfig);
+router.use('/', arenaConfig);

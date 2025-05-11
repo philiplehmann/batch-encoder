@@ -1,7 +1,7 @@
 import { exec, spawn } from 'node:child_process';
 import { F_OK } from 'node:constants';
 import crypto from 'node:crypto';
-import { createReadStream, createWriteStream } from 'node:fs';
+import { createReadStream, createWriteStream, existsSync } from 'node:fs';
 import { access, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import type Bull from 'bull';
@@ -115,7 +115,12 @@ export const Encoder = {
                 return reject(e);
               }
               const video = data.streams.find((stream: unknown) => {
-                return typeof stream === 'object' && stream !== null && 'codec_type' in stream && stream.codec_type === 'video';
+                return (
+                  typeof stream === 'object' &&
+                  stream !== null &&
+                  'codec_type' in stream &&
+                  stream.codec_type === 'video'
+                );
               });
               const { width, height } = video;
               if (!width || !height) {
@@ -194,6 +199,9 @@ export const Encoder = {
 
         const hmac = crypto.createHmac('sha256', file);
         const output = path.join(TMP_DIR, `${hmac.digest('hex')}.mkv`);
+        if (existsSync(output)) {
+          await unlink(output);
+        }
 
         if (propsWithDefault.scale) {
           propsWithDefault.scale = `scale=${propsWithDefault.scale}`;

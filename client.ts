@@ -23,7 +23,7 @@ redisServer.then(() => {
             }),
           ).then(() => resolve(), reject);
         });
-      } else if (stats.isFile() && ['.mkv', '.mp4', '.avi', '.m4v'].indexOf(extName) >= 0) {
+      } else if (stats.isFile() && ['.mkv', '.mp4', '.avi', '.m4v', '.ts'].indexOf(extName) >= 0) {
         console.log('add', pathName);
         analyzeVideo.add({ file: pathName, props: argv });
         resolve();
