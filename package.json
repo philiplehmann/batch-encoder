@@ -11,7 +11,7 @@
     "bull-arena": "^4.5.1",
     "dot-prop": "^9.0.0",
     "express": "^4.21.2",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "minimist": "^1.2.8"
   },
   "scripts": {
